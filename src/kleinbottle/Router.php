@@ -1,8 +1,6 @@
 <?php
 namespace Kleinbottle;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
-
 class Router {
     private $urlRoot;
     private $routes;
