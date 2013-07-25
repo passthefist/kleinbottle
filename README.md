@@ -1,7 +1,7 @@
 Restful routing/controllers
 =========
 
-This is just a wrapper around [https://github.com/chriso/klein.php](Klein) that allows for 
+This is just a wrapper around [Klein](https://github.com/chriso/klein.php) that allows for 
 easy construction of restful urls and controllers.
 
 A url maps to a controller based on a routes mapping, and the controller handles the
