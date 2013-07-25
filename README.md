@@ -1,9 +1,12 @@
 Restful routing/controllers
 =========
 
-This mini framework allows for easy construction of restful urls and controllers.
+This is just a wrapper around [https://github.com/chriso/klein.php](Klein) that allows for 
+easy construction of restful urls and controllers.
+
 A url maps to a controller based on a routes mapping, and the controller handles the
-http request/response. It's pretty much just a wrapper around Klein.
+http request/response. Controllers can respond to types of routes, one for resources and
+another for collections (of the same resource).5
 
 Routes
 -
