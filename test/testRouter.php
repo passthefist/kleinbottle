@@ -1,10 +1,16 @@
 <?php
+require_once __DIR__."/../vendor/autoload.php";
+set_include_path(get_include_path() . PATH_SEPARATOR . __DIR__);
 
-class routerTest extends test_base {
+class testRouter extends PHPUnit_Framework_TestCase {
 
     public function setUp() {
+        Phockito::include_hamcrest();
+
         $this->url_root = "/routing";
-        $this->controller_prefix = "tag_test_mocks_routing";
+        $this->controller_path = 'fixtures';
+        $this->controller_namespace = 'Kleinbottle\tests\fixtures';
+
         $this->routes = array(
             "/test/[i:var]" => "controller",
             "/empty/[i:var]" => "emptycontroller",
@@ -16,17 +22,18 @@ class routerTest extends test_base {
             )
         );
 
-        $this->router = Phockito::spy('tag_routing_core',
+        $this->router = Phockito::spy('Kleinbottle\router',
             $this->url_root,
             $this->routes,
-            $this->controller_prefix
+            $this->controller_path,
+            $this->controller_namespace
         );
         $this->router->loadRoutes();
     }
 
     public function testLoadController() {
-        $ctrl = $this->router->loadController($this->controller_prefix, 'controller');
-        $this->assertTrue(get_class($ctrl) === 'tag_test_mocks_routing_controller');
+        $ctrl = $this->router->loadController('controller');
+        $this->assertEquals(get_class($ctrl), 'Kleinbottle\tests\fixtures\controller');
     }
 
     public function testIsResourceRoute() {
@@ -62,8 +69,8 @@ class routerTest extends test_base {
     }
 
     public function mockController() {
-        $this->controller = Phockito::spy('tag_test_mocks_routing_controller');
-        Phockito::when($this->router)->loadController(anything(),anything())->return($this->controller);
+        $this->controller = Phockito::spy('Kleinbottle\tests\fixtures\controller');
+        Phockito::when($this->router)->loadController('controller')->return($this->controller);
         $this->router->captureOutput();
     }
 
@@ -84,7 +91,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->fetch(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"fetch","var":"5","var2":null}'
         );
@@ -92,7 +99,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70', 'GET');
         Phockito::verify($this->controller)->fetch(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"fetch","var":"5","var2":"70"}'
         );
@@ -105,7 +112,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->update(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"update","var":"5","var2":null}'
         );
@@ -113,7 +120,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70', 'PUT');
         Phockito::verify($this->controller)->update(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"update","var":"5","var2":"70"}'
         );
@@ -126,7 +133,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->delete(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"delete","var":"5","var2":null}'
         );
@@ -134,7 +141,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70', 'DELETE');
         Phockito::verify($this->controller)->delete(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"delete","var":"5","var2":"70"}'
         );
@@ -144,23 +151,23 @@ class routerTest extends test_base {
         $this->router->captureOutput();
 
         $response = $this->router->routeRequest('/bad/route', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/bad', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/test', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/test/5/bad', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
     }
 
     public function testResourceActionUnmatchedIs405() {
         $this->router->captureOutput();
 
         $response = $this->router->routeRequest('/routing/empty/5', 'GET');
-        $this->assertEqual($response->status()->getCode(), 405);
+        $this->assertEquals($response->status()->getCode(), 405);
 
         $response = $this->router->routeRequest('/routing/empty/5', 'PUT');
-        $this->assertEqual($response->status()->getCode(), 200);
+        $this->assertEquals($response->status()->getCode(), 200);
     }
 
 
@@ -187,7 +194,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->index(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"index","var":"5","var2":null}'
         );
@@ -195,7 +202,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70/tests', 'GET');
         Phockito::verify($this->controller)->index(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"index","var":"5","var2":"70"}'
         );
@@ -208,7 +215,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->create(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"create","var":"5","var2":null}'
         );
@@ -216,7 +223,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70/tests', 'POST');
         Phockito::verify($this->controller)->create(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"create","var":"5","var2":"70"}'
         );
@@ -229,7 +236,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->bulkUpdate(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"bulkUpdate","var":"5","var2":null}'
         );
@@ -237,7 +244,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70/tests', 'PUT');
         Phockito::verify($this->controller)->bulkUpdate(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"bulkUpdate","var":"5","var2":"70"}'
         );
@@ -250,7 +257,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->deleteAll(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"deleteAll","var":"5","var2":null}'
         );
@@ -258,7 +265,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70/tests', 'DELETE');
         Phockito::verify($this->controller)->deleteAll(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"deleteAll","var":"5","var2":"70"}'
         );
@@ -271,7 +278,7 @@ class routerTest extends test_base {
         Phockito::verify($this->controller)->custom(anything(),anything());
         Phockito::reset($this->controller);
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"custom","var":"5","var2":null}'
         );
@@ -279,7 +286,7 @@ class routerTest extends test_base {
         $response = $this->router->routeRequest('/routing/nested/5/child/70/tests/custom', 'POST');
         Phockito::verify($this->controller)->custom(anything(),anything());
 
-        $this->assertEqual(
+        $this->assertEquals(
             $response->body(),
             '{"action":"custom","var":"5","var2":"70"}'
         );
@@ -288,34 +295,34 @@ class routerTest extends test_base {
         $this->router->captureOutput();
 
         $response = $this->router->routeRequest('/bad/routes', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/bads', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/tests', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
         $response = $this->router->routeRequest('/routing/test/5/bads', 'GET');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
     }
 
     public function testCollectionMethodUnmatchedIs405() {
         $this->router->captureOutput();
 
         $response = $this->router->routeRequest('/routing/empty/5/things', 'GET');
-        $this->assertEqual($response->status()->getCode(), 405);
+        $this->assertEquals($response->status()->getCode(), 405);
 
         $response = $this->router->routeRequest('/routing/empty/5/things', 'POST');
-        $this->assertEqual($response->status()->getCode(), 200);
+        $this->assertEquals($response->status()->getCode(), 200);
 
         $response = $this->router->routeRequest('/routing/empty/5/things', 'PUT');
-        $this->assertEqual($response->status()->getCode(), 405);
+        $this->assertEquals($response->status()->getCode(), 405);
     }
 
     public function testCollectionActionUnmatchedIs404() {
         $response = $this->router->routeRequest('/routing/empty/5/things', 'POST');
-        $this->assertEqual($response->status()->getCode(), 200);
+        $this->assertEquals($response->status()->getCode(), 200);
 
         $response = $this->router->routeRequest('/routing/empty/5/things/action', 'POST');
-        $this->assertEqual($response->status()->getCode(), 404);
+        $this->assertEquals($response->status()->getCode(), 404);
     }
 }
 

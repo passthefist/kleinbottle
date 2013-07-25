@@ -1,6 +1,6 @@
 <?php
 //require_once __DIR__ . '/../../../../vendor/autoload.php';
-use /tagged/kleinbottle;
+namespace Kleinbottle;
 
 class Router {
     private $urlRoot;
@@ -25,10 +25,12 @@ class Router {
         'delete' => 'DELETE',
     );
 
-    public function __construct($urlRoot, $routes, $controllerBasePath) {
+    public function __construct($urlRoot, $routes, $controllerBasePath, $controllerNamespace) {
         $this->routes = $this->flattenRoutes($routes);
         $this->urlRoot = $urlRoot;
         $this->basePath = $controllerBasePath;
+        $this->baseNamespace = $controllerNamespace;
+
         $this->klein = new \Klein\Klein();
         $this->devMode = false;
         $this->sendOutput();
@@ -57,14 +59,13 @@ class Router {
     public function loadRoutes() {
         $router = $this;
         $routes = $this->routes;
-        $path = $this->basePath;
 
-        $this->klein->with($this->urlRoot, function () use($routes, $path, $router) {
+        $this->klein->with($this->urlRoot, function () use($routes, $router) {
             foreach($routes as $route => $controller) {
                 if ($router->isCollectionRoute($route)) {
-                    $router->routeCollection($route, $path, $controller);
+                    $router->routeCollection($route, $controller);
                 } elseif ($router->isResourceRoute($route)) {
-                    $router->routeResource($route, $path, $controller);
+                    $router->routeResource($route, $controller);
                 } else {
                     throw new Exception(
 <<<MSG
@@ -113,15 +114,18 @@ MSG
     /**
      * Returns the name of the class for the controller
      */
-    public function getControllerClass($path, $controller) {
-        return $path."_".$controller;
+    public function getControllerClass($controller) {
+        return "$this->baseNamespace\\$controller";
     }
 
     /**
      * Return a live object that is the controller class
      */
-    public function loadController($path, $controller) {
-        $class = $this->getControllerClass($path, $controller);
+    public function loadController($controller) {
+        $class = $this->getControllerClass($controller);
+        $filePath = "$this->basePath/$controller";
+
+        require_once "$filePath.php";
         return new $class;
     }
 
@@ -171,8 +175,8 @@ MSG
      *
      * Would call the message search() on the messages controller
      */
-    public function routeCollection($route, $path, $controller) {
-        $class = $this->getControllerClass($path, $controller);
+    public function routeCollection($route, $controller) {
+        $class = $this->loadController($controller);
 
         $actions = get_class_methods($class);
 
@@ -183,7 +187,6 @@ MSG
                 $mappedRoute = $this->makeRoute(
                     $route,
                     $httpMethod,
-                    $path,
                     $controller,
                     $action
                 );
@@ -191,11 +194,11 @@ MSG
                 // Collections allow calling actions on the url
                 $actionPath = $route."/$action";
 
-                $this->makeRoute($actionPath,'POST',$path,$controller,$action);
+                $this->makeRoute($actionPath,'POST',$controller,$action);
                 // If we're in development, allow get requests to
                 // call the action as well
                 if ($this->devMode) {
-                    $this->makeRoute($actionPath,'GET',$path,$controller,$action);
+                    $this->makeRoute($actionPath,'GET',$controller,$action);
                 }
             }
         }
@@ -209,8 +212,8 @@ MSG
      * HTTP PUT: controller->update()
      * HTTP DELETE: controller->delete()
      */
-    public function routeResource($route, $path, $controller) {
-        $class = $this->getControllerClass($path, $controller);
+    public function routeResource($route, $controller) {
+        $class = $this->loadController($controller);
 
         $actions = get_class_methods($class);
 
@@ -221,7 +224,6 @@ MSG
                 $mappedRoute = $this->makeRoute(
                     $route,
                     $httpMethod,
-                    $path,
                     $controller,
                     $action
                 );
@@ -238,11 +240,11 @@ MSG
      * $controller the relative path/name of controller to load
      * $action the method to call on the controller
      */
-    public function makeRoute($route, $httpMethod, $path, $controller, $action) {
+    public function makeRoute($route, $httpMethod, $controller, $action) {
         $router = $this;
 
-        $mappedRoute = $this->klein->respond($httpMethod, $route, function ($request, $response) use ($router, $path, $controller, $action) {
-            $router->loadController($path,$controller)->$action($request, $response);
+        $mappedRoute = $this->klein->respond($httpMethod, $route, function ($request, $response) use ($router, $controller, $action) {
+            $router->loadController($controller)->$action($request, $response);
         });
 
         return $mappedRoute;
