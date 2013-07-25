@@ -1,6 +1,6 @@
 {
    "name": "tagged/kleinbottle",
-   "description": "Easily create restful api's and services. Based on Klein.php",
+   "description": "Easily create restful apis and services. Based on Klein.php",
    "keywords": ["router", "routing", "klein", "rest", "restful", "controller"],
    "homepage": "https://github.com/rdgoetz/kleinbottle",
    "license": "MIT",
