@@ -19,6 +19,7 @@ class testRouter extends PHPUnit_Framework_TestCase {
             "/nested/[i:var]" => array(
                 "/child/[i:var2]" => 'controller',
                 "/child/[i:var2]/tests" => 'controller',
+                "/child/[i:var2]/json" => 'jsoncontroller',
             )
         );
 
@@ -28,6 +29,8 @@ class testRouter extends PHPUnit_Framework_TestCase {
             $this->controller_path,
             $this->controller_namespace
         );
+        $this->router->initAutoload();
+
         $this->router->loadRoutes();
     }
 
@@ -323,6 +326,51 @@ class testRouter extends PHPUnit_Framework_TestCase {
 
         $response = $this->router->routeRequest('/routing/empty/5/things/action', 'POST');
         $this->assertEquals($response->status()->getCode(), 404);
+    }
+
+    /**
+     * Test the chain rules and json stuff.
+     **/
+    public function testJsonValidation() {
+        $this->mockController();
+
+        $_GET['json'] = json_encode( array(
+            'testParams' => array(
+                'testParam' => 55
+            ),
+            'anotherParam' => 'This is a string',
+        ));
+
+        $response = $this->router->routeRequest('/routing/nested/5/child/70/json', 'GET');
+
+        $this->assertEquals(
+            $response->body(),
+            json_encode( array(
+                'action' => 'index',
+                'var' => '5',
+                'var2' => '70',
+                'testParam' => 55,
+                'anotherParam' => 'This is a string'
+            ))
+        );
+
+        $_GET['json'] = json_encode( array(
+            'testParams' => new stdClass,
+            'anotherParam' => 'This is a string',
+        ));
+
+        $response = $this->router->routeRequest('/routing/nested/5/child/70/json', 'GET');
+
+        $this->assertEquals(
+            $response->body(),
+            json_encode( array(
+                'action' => 'index',
+                'var' => '5',
+                'var2' => '70',
+                'testParam' => 256,
+                'anotherParam' => 'This is a string'
+            ))
+        );
     }
 }
 
