@@ -10,9 +10,11 @@ namespace Kleinbottle;
  **/
 class ControllerInvoker {
     private $controller;
+    private $formatter;
 
     public function __construct($controller) {
         $this->controller = $controller;
+        $this->formatter = 'json_decode';
     }
 
     public function chainDefMethod($action) {
@@ -66,4 +68,25 @@ class ControllerInvoker {
             // ??
         }
     }
+
+    public function __call($action, $args) {
+        $request = new \Klein\Request(
+            $args[0],
+            $_POST,
+            $_COOKIE,
+            $_SERVER,
+            $_FILES,
+            null // Let our content getter take care of the "body"
+        );
+
+        $response = new \Klein\Response();
+        $response->shouldOverrideContentType(false);
+
+        ob_start();
+        $this->invoke($action, $request, $response);
+        $responseBody = ob_get_clean();
+
+        return call_user_func($this->formatter,$responseBody);
+    }
 }
+

@@ -243,16 +243,11 @@ MSG
         $router = $this;
 
         $mappedRoute = $this->klein->respond($httpMethod, $route, function ($request, $response) use ($router, $controller, $action) {
-            $requestHandler = new ControllerInvoker($router->loadController($controller));
+            $requestHandler = $router->loadController($controller);
             $requestHandler->invoke($action,$request, $response);
         });
 
         return $mappedRoute;
-    }
-
-    protected function initAutoload() {
-        echo 'AUTOLOADED!';
-        require '../../vendor/autoload.php';
     }
 
     /**
