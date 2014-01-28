@@ -14,7 +14,8 @@
    "require": {
       "php": ">=5.3.0",
       "klein/klein": "dev-master",
-      "ehough/chaingang": "1.0.3"
+      "ehough/chaingang": "1.0.3",
+      "geraintluff/jsv4": "dev-master"
    },
    "autoload": {
       "psr-0": { "Kleinbottle\\": "src/" }

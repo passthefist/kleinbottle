@@ -1,6 +1,14 @@
 <?php
 namespace Kleinbottle;
 
+/*
+ * This whole file could use a rework. There's got to
+ * be a better way to auto route things.
+ *
+ * Or at least we should cache the routes instead of
+ * building the index on every request.
+ */
+
 class Router {
     private $urlRoot;
     private $routes;
@@ -19,7 +27,7 @@ class Router {
     );
 
     private $resourceMapping = array(
-        'fetch' => 'GET',
+        'find' => 'GET',
         'update' => 'PUT',
         'delete' => 'DELETE',
     );
@@ -66,7 +74,7 @@ class Router {
                 } elseif ($router->isResourceRoute($route)) {
                     $router->routeResource($route, $controller);
                 } else {
-                    throw new Exception(
+                    throw new \Exception(
 <<<MSG
 Route '$route' not routable.
 Valid routes look like '/base/[i:intParam]/subpath/[a:alphanumParam]'
@@ -122,10 +130,7 @@ MSG
      */
     public function loadController($controller) {
         $class = $this->getControllerClass($controller);
-        $filePath = "$this->basePath/$controller";
-
-        require_once "$filePath.php";
-        return new $class;
+        return $class::api();
     }
 
     /**
@@ -175,31 +180,19 @@ MSG
      * Would call the message search() on the messages controller
      */
     public function routeCollection($route, $controller) {
-        $class = $this->loadController($controller);
+        $controller = $this->loadController($controller);
 
-        $actions = get_class_methods($class);
+        $methods = $controller->getCollectionMethods();
 
-        foreach($actions as $action) {
-            if (isset($this->collectionMapping[$action])) {
-                $httpMethod = $this->collectionMapping[$action];
+        foreach($methods as $method) {
+            $httpAction = $controller->actionFor($method);
 
-                $mappedRoute = $this->makeRoute(
-                    $route,
-                    $httpMethod,
-                    $controller,
-                    $action
-                );
-            } elseif (!isset($this->resourceMapping[$action])) {
-                // Collections allow calling actions on the url
-                $actionPath = $route."/$action";
-
-                $this->makeRoute($actionPath,'POST',$controller,$action);
-                // If we're in development, allow get requests to
-                // call the action as well
-                if ($this->devMode) {
-                    $this->makeRoute($actionPath,'GET',$controller,$action);
-                }
-            }
+            $mappedRoute = $this->makeRoute(
+                $route,
+                $httpAction,
+                $controller,
+                $method
+            );
         }
     }
 
@@ -212,21 +205,19 @@ MSG
      * HTTP DELETE: controller->delete()
      */
     public function routeResource($route, $controller) {
-        $class = $this->loadController($controller);
+        $controller = $this->loadController($controller);
 
-        $actions = get_class_methods($class);
+        $methods = $controller->getResourceMethods();
 
-        foreach($actions as $action) {
-            if (isset($this->resourceMapping[$action])) {
-                $httpMethod = $this->resourceMapping[$action];
+        foreach($methods as $method) {
+            $httpAction = $controller->actionFor($method);
 
-                $mappedRoute = $this->makeRoute(
-                    $route,
-                    $httpMethod,
-                    $controller,
-                    $action
-                );
-            }
+            $mappedRoute = $this->makeRoute(
+                $route,
+                $httpAction,
+                $controller,
+                $method
+            );
         }
     }
 
@@ -243,8 +234,7 @@ MSG
         $router = $this;
 
         $mappedRoute = $this->klein->respond($httpMethod, $route, function ($request, $response) use ($router, $controller, $action) {
-            $requestHandler = $router->loadController($controller);
-            $requestHandler->invoke($action,$request, $response);
+            $controller->invokeWithRequest($action,$request, $response);
         });
 
         return $mappedRoute;

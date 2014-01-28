@@ -152,7 +152,9 @@ class Jsv4 {
     }
 
     private function checkTypes() {
+        echo "checking types";
         if (isset($this->schema->type)) {
+            echo "has type";
             $types = $this->schema->type;
             if (!is_array($types)) {
                 $types = array($types);
