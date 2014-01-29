@@ -17,21 +17,6 @@ class Router {
     private $devMode;
     private $captureMode;
 
-    // Defines the mapping between HTTP methods
-    // and the controller actions
-    private $collectionMapping = array(
-        'index' => 'GET',
-        'create' => 'POST',
-        'bulkUpdate' => 'PUT',
-        'deleteAll' => 'DELETE',
-    );
-
-    private $resourceMapping = array(
-        'find' => 'GET',
-        'update' => 'PUT',
-        'delete' => 'DELETE',
-    );
-
     public function __construct($urlRoot, $routes, $controllerBasePath, $controllerNamespace) {
         $this->routes = $this->flattenRoutes($routes);
         $this->urlRoot = $urlRoot;
@@ -45,14 +30,6 @@ class Router {
 
     public function getRoutes() {
         return $this->routes;
-    }
-
-    public function collectionResponseMap(array $map) {
-        $this->collectionMapping = $map;
-    }
-
-    public function resourceResponseMap(array $map) {
-        $this->resourceMapping = $map;
     }
 
     public function sendOutput() {

@@ -1,7 +1,6 @@
 <?php
 namespace Kleinbottle\Schema;
-
-//require_once __DIR__.'/../validation/jsv4.php';
+use Klein\Exceptions;
 
 class Validator {
     private $schema;
@@ -14,12 +13,10 @@ class Validator {
 
     public function validate($data) {
 
-        $result = \geraintluff\Jsv4::coerce($data, $this->schemaObj);
-
-        print_r(json_encode($result));
+        $result = \Jsv4::coerce(json_decode(json_encode($data)), $this->schemaObj);
 
         if (!$result->valid) {
-            throw new Exception($result->errors);
+            throw new Exception($result->errors[0]->message, 400);
         }
 
         return $result->value;

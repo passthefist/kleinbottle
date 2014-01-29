@@ -134,8 +134,29 @@ class Base {
         $params = $request->params();
 
         $result = $this->invoke($action,$params);
+        $result = $this->formatResponse($action,$result, $request->format);
 
         $response->body($result);
+    }
+
+    protected function defaultFormat($result, $format) {
+        switch($format) {
+        default:
+            return json_encode($result);
+        }
+    }
+
+    protected function formatResponse($action,$result,$format) {
+        $format = $format?:'json';
+        $action = ucfirst($action);
+
+        $formatMethod = "format$action";
+
+        if(method_exists($this,$formatMethod)) {
+            return $this->$formatMethod($result, $format);
+        } else {
+            return $this->defaultFormat($result, $format);
+        }
     }
 
     protected function invokeWithFilters($action, $params) {
