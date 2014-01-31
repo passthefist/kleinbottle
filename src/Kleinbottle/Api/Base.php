@@ -176,6 +176,109 @@ class Base {
     public function getDocumentation() {
         return new ApiDocumentor($this);
     }
+    
+    public function renderDocumentation($key, $item, $depth, $isLast = false){
+
+        $comma = "";
+        if(!$isLast){
+            $comma = ",";
+        }
+
+        echo "<article class='tools-api-doc'>";
+
+        if(!empty($item['required'])){
+            echo '<span title="required" class="required">★</span>';
+        }
+
+        if(isset($key)){
+            echo "<h2 class='tools-api-doc'>\"$key\": </h2>";
+        }
+
+        echo "<h2 class='tools-api-doc-value' >&nbsp;&lt;";
+
+        if(!empty($item['type'])){
+            echo $item['type'];
+        }
+        
+        echo "&gt; </h2>";
+
+        if(isset($key)){
+
+            if(!empty($item['title'])){
+                echo "<h3 class='tools-api-doc'>".$item['title']."</h3>";
+            }
+
+            $comment = "";
+            if(isset($item['description'])){
+                $comment .= $item['description'];
+            }
+
+            $tmp = array_flip(array(
+                "minimum",
+                "maximum",
+                "default"
+            ));
+            $info = array_intersect_key($item, $tmp);
+
+            if($info){
+                $comment .= "\n\n   ";
+                foreach($info as $key => $value){
+                    $pairs[] = " $key: ".var_export($value, true);
+                }
+
+                $comment .= implode(",", $pairs);
+            }
+
+            echo $this->makeComment($comment);
+
+        }
+
+        if(!empty($item['type'])){
+            switch($item['type']){
+                case "object":
+                    if($depth==0){
+                        if(isset($item['name'])){
+                            echo "
+                            <header>
+                             <h1>".$item['name']."</h1>";
+                            if(isset($item['description'])){
+                                echo "<p class='tools-api-doc'>".$item['description']."</p>";
+                            }
+
+                            echo "</header>
+                        ";
+                        }
+                    }
+                    echo "<span class='tools-api-doc-container'>{</span>";
+
+                    $i = 0;
+                    $numProps = count($item['properties']);
+                    foreach($item['properties'] as $key => $prop){
+                        $this->renderDocumentation($key, $prop, $depth+1, $i==($numProps-1));
+                        $i++;
+                    }
+
+                    echo "<span class='tools-api-doc-container'>}$comma</span>";
+                    break;
+                case "array":
+                    echo "<span class='tools-api-doc-container'>[</span>";
+
+                    $this->renderDocumentation($key, $item['items'], $depth+1, true);
+
+                    echo "<span class='tools-api-doc-container'>]$comma</span>";
+
+                    break;
+                case "number":
+                    break;
+            }
+        }
+        echo "</article>";
+    }
+    
+    protected function makeComment($str){
+        $wrapStr = wordwrap($str, 80, "\n    ");
+        return "<pre class='tools-api-doc'>/*  ".$wrapStr." */</pre>";
+    }
 
     public function __call($action, $args) {
         return $this->invoke($action, $request, $response);
