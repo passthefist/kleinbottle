@@ -12,10 +12,14 @@ class DateTime extends Schema{
                 "dateTime"=> array(
                     "type"=>"string",
                     "description"=> "A foramatted date string.",
-                    "pattern"=> "/(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})/",
+                    "pattern"=> "(\d{4})-(\d{2})-(\d{2})T(\d{2})\:(\d{2})\:(\d{2})[+-](\d{2})\:(\d{2})",
                 ),
                 "required"=>array("dateTime"),
             )
         );
+    }
+
+    public static function getTimestamp($dateString) {
+        return strtotime($dateString);
     }
 }

@@ -16,7 +16,7 @@ class Validator {
         $result = \Jsv4::coerce(json_decode(json_encode($data)), $this->schemaObj);
 
         if (!$result->valid) {
-            throw new Exception($result->errors[0]->message, 400);
+            throw new \Exception($result->errors[0]->message, 400);
         }
 
         return $result->value;

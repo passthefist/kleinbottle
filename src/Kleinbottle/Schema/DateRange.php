@@ -9,10 +9,16 @@ class DateRange extends Schema{
             "description"=> "Specify the sort type and direction.",
             "additionalProperties"=>false,
             "properties"=> array(
-                "startDate"=> DateTime::build(),
-                "endDate"=> DateTime::build(),
+                "start"=> DateTime::build(),
+                "end"=> DateTime::build(),
             ),
-
         );
+    }
+
+    public static function getDates($fragment) {
+        $start = DateTime::getTimestamp($fragment->start->dateTime);
+        $end = DateTime::getTimestamp($fragment->end->dateTime);
+
+        return array($start, $end);
     }
 }

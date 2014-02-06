@@ -17,6 +17,7 @@ class Base {
 
     protected $collectionMapping = array(
         'find' => 'GET',
+        'index' => 'GET',
         'create' => 'POST',
         'bulkUpdate' => 'PUT',
         'deleteAll' => 'DELETE',
@@ -24,6 +25,10 @@ class Base {
 
     public static function api() {
         return new static();
+    }
+
+    public static function raw() {
+        return new RawWrapper(new static());
     }
 
     protected function registerInputSchema($method, $schema) {
@@ -39,7 +44,11 @@ class Base {
     }
 
     public function respondsTo($method) {
-        return method_exists($this, $method);
+        $routableMethods = array_merge(
+            $this->getCollectionMethods(),
+            $this->getResourceMethods()
+        );
+        return in_array($method, $routableMethods);
     }
 
     public function actionFor($method) {
@@ -66,6 +75,18 @@ class Base {
             get_class_methods($this),
             array_keys($this->resourceMapping)
         );
+    }
+
+    public function customResourceHandler($action, $method) {
+        $this->Mapping[$method] = $action;
+    }
+
+    public function customCollectionHandler($action, $method) {
+        $this->collectionMapping[$method] = $action;
+    }
+
+    public function customHandler($action, $method) {
+        $this->customCollectionHandler($action, $method);
     }
 
     public function inputSchemaFor($method) {
@@ -127,6 +148,8 @@ class Base {
     public function invoke($method, $params) {
         $params = $this->validateInputFor($method, $params);
 
+        $params = json_decode(json_encode($params));
+
         return $this->$method($params);
     }
 
@@ -175,109 +198,6 @@ class Base {
     // Stub. Will add documentation later
     public function getDocumentation() {
         return new ApiDocumentor($this);
-    }
-    
-    public function renderDocumentation($key, $item, $depth, $isLast = false){
-
-        $comma = "";
-        if(!$isLast){
-            $comma = ",";
-        }
-
-        echo "<article class='tools-api-doc'>";
-
-        if(!empty($item['required'])){
-            echo '<span title="required" class="required">★</span>';
-        }
-
-        if(isset($key)){
-            echo "<h2 class='tools-api-doc'>\"$key\": </h2>";
-        }
-
-        echo "<h2 class='tools-api-doc-value' >&nbsp;&lt;";
-
-        if(!empty($item['type'])){
-            echo $item['type'];
-        }
-        
-        echo "&gt; </h2>";
-
-        if(isset($key)){
-
-            if(!empty($item['title'])){
-                echo "<h3 class='tools-api-doc'>".$item['title']."</h3>";
-            }
-
-            $comment = "";
-            if(isset($item['description'])){
-                $comment .= $item['description'];
-            }
-
-            $tmp = array_flip(array(
-                "minimum",
-                "maximum",
-                "default"
-            ));
-            $info = array_intersect_key($item, $tmp);
-
-            if($info){
-                $comment .= "\n\n   ";
-                foreach($info as $key => $value){
-                    $pairs[] = " $key: ".var_export($value, true);
-                }
-
-                $comment .= implode(",", $pairs);
-            }
-
-            echo $this->makeComment($comment);
-
-        }
-
-        if(!empty($item['type'])){
-            switch($item['type']){
-                case "object":
-                    if($depth==0){
-                        if(isset($item['name'])){
-                            echo "
-                            <header>
-                             <h1>".$item['name']."</h1>";
-                            if(isset($item['description'])){
-                                echo "<p class='tools-api-doc'>".$item['description']."</p>";
-                            }
-
-                            echo "</header>
-                        ";
-                        }
-                    }
-                    echo "<span class='tools-api-doc-container'>{</span>";
-
-                    $i = 0;
-                    $numProps = count($item['properties']);
-                    foreach($item['properties'] as $key => $prop){
-                        $this->renderDocumentation($key, $prop, $depth+1, $i==($numProps-1));
-                        $i++;
-                    }
-
-                    echo "<span class='tools-api-doc-container'>}$comma</span>";
-                    break;
-                case "array":
-                    echo "<span class='tools-api-doc-container'>[</span>";
-
-                    $this->renderDocumentation($key, $item['items'], $depth+1, true);
-
-                    echo "<span class='tools-api-doc-container'>]$comma</span>";
-
-                    break;
-                case "number":
-                    break;
-            }
-        }
-        echo "</article>";
-    }
-    
-    protected function makeComment($str){
-        $wrapStr = wordwrap($str, 80, "\n    ");
-        return "<pre class='tools-api-doc'>/*  ".$wrapStr." */</pre>";
     }
 
     public function __call($action, $args) {
